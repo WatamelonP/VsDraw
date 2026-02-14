@@ -103,8 +103,10 @@ export default function ColorPicker({
         damping: 30,
         stiffness: 100,
     },
+    onColorSelect,
 }: {
-    pushSpring?: SpringOptions
+    pushSpring?: SpringOptions;
+    onColorSelect?: (color: string) => void;
 }) {
     const containerRef = useRef<HTMLDivElement>(null)
     const [{ centerX, centerY, radius }, setContainerDimensions] = useState({
@@ -161,6 +163,7 @@ export default function ColorPicker({
                     duration: 0.2,
                 })
             }
+            onColorSelect?.(selectedColor);
         } else {
             for (let i = 0; i < stopMotionValues.length; i++) {
                 animate(stopMotionValues[i], originalStopValues[i], {

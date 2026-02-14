@@ -23,7 +23,7 @@ export const FloatingDock = ({
   desktopClassName,
   mobileClassName,
 }: {
-  items: ({ title: string; icon: React.ReactNode; href: string; onClick?: (e: React.MouseEvent) => void })[];
+  items: ({ title: string; icon: React.ReactNode;  onClick?: (e: React.MouseEvent) => void })[];
   desktopClassName?: string;
   mobileClassName?: string;
 }) => {
@@ -39,7 +39,7 @@ const FloatingDockMobile = ({
   items,
   className,
 }: {
-  items: ({ title: string; icon: React.ReactNode; href: string; onClick?: (e: React.MouseEvent) => void })[];
+  items: ({ title: string; icon: React.ReactNode; onClick?: (e: React.MouseEvent) => void })[];
   className?: string;
 }) => {
   const [open, setOpen] = useState(false);
@@ -68,8 +68,8 @@ const FloatingDockMobile = ({
                 }}
                 transition={{ delay: (items.length - 1 - idx) * 0.05 }}
               >
-                <a
-                  href={item.href}
+                <button
+                  
                   key={item.title}
                   onClick={(e) => {
                     if (item.onClick) {
@@ -80,7 +80,7 @@ const FloatingDockMobile = ({
                   className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-50 dark:bg-neutral-900"
                 >
                   <div className="h-4 w-4">{item.icon}</div>
-                </a>
+                </button>
               </motion.div>
             ))}
           </motion.div>
@@ -100,7 +100,7 @@ const FloatingDockDesktop = ({
   items,
   className,
 }: {
-  items: ({ title: string; icon: React.ReactNode; href: string; onClick?: (e: React.MouseEvent) => void })[];
+  items: ({ title: string; icon: React.ReactNode; onClick?: (e: React.MouseEvent) => void })[];
   className?: string;
 }) => {
   let mouseX = useMotionValue(Infinity);
@@ -124,13 +124,13 @@ function IconContainer({
   mouseX,
   title,
   icon,
-  href,
+  // href,
   onClick,
 }: {
   mouseX: MotionValue;
   title: string;
   icon: React.ReactNode;
-  href: string;
+  // href: string;
   onClick?: (e: React.MouseEvent) => void;
 }) {
   let ref = useRef<HTMLDivElement>(null);
@@ -177,7 +177,7 @@ function IconContainer({
 
   return (
     <a
-      href={href}
+      // href={href}
       onClick={(e) => {
         if (onClick) {
           e.preventDefault();

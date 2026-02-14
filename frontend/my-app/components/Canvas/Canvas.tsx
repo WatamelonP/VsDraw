@@ -2,12 +2,28 @@
 import React from 'react';
 import { Stage, Layer, Line, Text } from 'react-konva';
 import ToolSelector from './ToolSelector';
+import { Button } from "@/components/ui/button"
+import {
+  Popover,
+  PopoverContent,
+  PopoverDescription,
+  PopoverHeader,
+  PopoverTitle,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 
-type LineData = { tool: string; points: number[] };
+type LineData = { tool: string; points: number[]; color?: string; strokeWidth?: number };
 
-const App: React.FC = () => {
+type CanvasProps = {
+  penColor?: string;
+};
+
+const App: React.FC<CanvasProps> = ({ penColor = '#ffffff' }) => {
   const [tool, setTool] = React.useState<string>('pen');
   const [lines, setLines] = React.useState<LineData[]>([]);
+  const [currentPenColor, setCurrentPenColor] = React.useState(penColor);
+  const [currentPenWidth, setCurrentPenWidth] = React.useState<number>(5);
+  const [currentEraserWidth, setCurrentEraserWidth] = React.useState<number>(20);
   const isDrawing = React.useRef(false);
   const [stageSize, setStageSize] = React.useState({ width: 0, height: 0 });
 
@@ -24,7 +40,7 @@ const App: React.FC = () => {
     const stage = e.target.getStage();
     const pos = stage && stage.getPointerPosition();
     if (!pos) return;
-    setLines((prev) => [...prev, { tool, points: [pos.x, pos.y] }]);
+    setLines((prev) => [...prev, { tool, points: [pos.x, pos.y], color: tool === 'pen' ? currentPenColor : undefined, strokeWidth: tool === 'pen' ? currentPenWidth : tool === 'eraser' ? currentEraserWidth : undefined }]);
   };
 
   const handleMouseMove = (e: any) => {
@@ -52,7 +68,7 @@ const App: React.FC = () => {
 
   return (
     <div>
-      <ToolSelector tool={tool} onChange={setTool} />
+      <ToolSelector tool={tool} onChange={setTool} onColorChange={setCurrentPenColor} onWidthChange={setCurrentPenWidth} currentWidth={currentPenWidth} onEraserWidthChange={setCurrentEraserWidth} currentEraserWidth={currentEraserWidth} />
       <Stage
         width={stageSize.width || 800}
         height={stageSize.height || 600}
@@ -68,8 +84,8 @@ const App: React.FC = () => {
             <Line
               key={i}
               points={line.points}
-              stroke="#ffffff"
-              strokeWidth={5}
+              stroke={line.color || '#ffffff'}
+                  strokeWidth={line.strokeWidth ?? (line.tool === 'eraser' ? currentEraserWidth : currentPenWidth)}
               tension={0.5}
               lineCap="round"
               lineJoin="round"

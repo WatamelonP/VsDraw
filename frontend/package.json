@@ -2,6 +2,7 @@
   "dependencies": {
     "@gsap/react": "^2.1.2",
     "konva": "^10.2.0",
+    "motion": "^12.34.0",
     "react-konva": "^19.2.2"
   }
 }
