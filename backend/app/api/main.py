@@ -1,7 +1,7 @@
 from fastapi import APIRouter
+from .routes import drawing
 
 router = APIRouter()
 
-@router.get("/")
-def root():
-    return { "message": "hamburger" }
+router.include_router(drawing.router)
+

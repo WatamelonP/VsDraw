@@ -93,7 +93,7 @@ const Canvas: React.FC<CanvasProps> = ({ penColor = '#ffffff' }) => {
 
     setIsPredicting(true);
     try {
-      const response = await fetch('http://localhost:8000/predict', {
+      const response = await fetch('http://localhost:8000/api/v1/drawing/predict', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -190,7 +190,7 @@ const Canvas: React.FC<CanvasProps> = ({ penColor = '#ffffff' }) => {
         canRedo={canRedo}
       />
       
-      {/* 🔴 ADD THIS - Prediction display */}
+  
       {(prediction || isPredicting) && (
         <div className="fixed top-4 right-4 bg-white dark:bg-neutral-800 p-4 rounded-lg shadow-lg">
           {isPredicting ? (
