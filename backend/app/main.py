@@ -8,7 +8,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # allows all origins, basically disables CORS
+    allow_origins=["*"], # allows all origins, 
     allow_credentials=True, # allows cookies to be sent
     allow_methods=["*"], # allows all methods
     allow_headers=["*"], # allows all headers
@@ -23,8 +23,6 @@ def root():
 @app.get("/users/{username}")
 async def read_user(username: str):
     return {"message": f"Hello {username}"}
-
-
 
 if __name__ == "__main__":
     import uvicorn

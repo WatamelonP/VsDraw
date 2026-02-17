@@ -1,31 +1,40 @@
 'use client';
 import React from 'react';
-import { Stage, Layer, Line, Text } from 'react-konva';
+import { Stage, Layer, Line } from 'react-konva';
+import { useAppSelector, useAppDispatch } from '@/store/hooks';
+import { 
+  startStroke,  // Note: it's startStroke, not startDrawing
+  addPoint,
+  endStroke,    // Note: it's endStroke, not finishStroke
+  cancelStroke,
+  undo,
+  redo,
+  clearDrawing  // Note: it's clearDrawing, not clearAll
+} from '@/store/slices/drawingSlice';
 import ToolSelector from './ToolSelector';
-import { Button } from "@/components/ui/button"
-import {
-  Popover,
-  PopoverContent,
-  PopoverDescription,
-  PopoverHeader,
-  PopoverTitle,
-  PopoverTrigger,
-} from "@/components/ui/popover"
-
-type LineData = { tool: string; points: number[]; color?: string; strokeWidth?: number };
 
 type CanvasProps = {
   penColor?: string;
 };
 
-const App: React.FC<CanvasProps> = ({ penColor = '#ffffff' }) => {
+const Canvas: React.FC<CanvasProps> = ({ penColor = '#ffffff' }) => {
+  const dispatch = useAppDispatch();
+  
+  // Redux state
+  const strokes = useAppSelector((state) => state.drawing.strokes);
+  const currentStroke = useAppSelector((state) => state.drawing.currentStroke);
+  const isDrawingRedux = useAppSelector((state) => state.drawing.isDrawing);
+  
+  // Local state for UI
   const [tool, setTool] = React.useState<string>('pen');
-  const [lines, setLines] = React.useState<LineData[]>([]);
   const [currentPenColor, setCurrentPenColor] = React.useState(penColor);
   const [currentPenWidth, setCurrentPenWidth] = React.useState<number>(5);
   const [currentEraserWidth, setCurrentEraserWidth] = React.useState<number>(20);
-  const isDrawing = React.useRef(false);
+
+  // Ref for mouse tracking
+  const isDrawingRef = React.useRef(false);
   const [stageSize, setStageSize] = React.useState({ width: 0, height: 0 });
+  const stageRef = React.useRef<any>(null);
 
   React.useEffect(() => {
     const onResize = () =>
@@ -36,68 +45,134 @@ const App: React.FC<CanvasProps> = ({ penColor = '#ffffff' }) => {
   }, []);
 
   const handleMouseDown = (e: any) => {
-    isDrawing.current = true;
+    isDrawingRef.current = true;
     const stage = e.target.getStage();
-    const pos = stage && stage.getPointerPosition();
+    const pos = stage?.getPointerPosition();
     if (!pos) return;
-    setLines((prev) => [...prev, { tool, points: [pos.x, pos.y], color: tool === 'pen' ? currentPenColor : undefined, strokeWidth: tool === 'pen' ? currentPenWidth : tool === 'eraser' ? currentEraserWidth : undefined }]);
+
+    // Start a new stroke in Redux
+    dispatch(startStroke({ 
+      tool,
+      color: tool === 'eraser' ? '#ffffff' : currentPenColor,
+      strokeWidth: tool === 'eraser' ? currentEraserWidth : currentPenWidth
+    }));
+    
+    // Add the first point
+    dispatch(addPoint({ x: pos.x, y: pos.y }));
   };
 
   const handleMouseMove = (e: any) => {
-    if (!isDrawing.current) return;
+    if (!isDrawingRef.current) return;
+    
     const stage = e.target.getStage();
-    const point = stage && stage.getPointerPosition();
+    const point = stage?.getPointerPosition();
     if (!point) return;
 
-    setLines((prev) => {
-      if (prev.length === 0) return prev;
-      const newLines = prev.slice();
-      const lastIndex = newLines.length - 1;
-      const lastLine = newLines[lastIndex];
-      newLines[lastIndex] = {
-        ...lastLine,
-        points: lastLine.points.concat([point.x, point.y]),
-      };
-      return newLines;
-    });
+    // Add point to current stroke in Redux
+    dispatch(addPoint({ x: point.x, y: point.y }));
+    
+    // Force redraw for smooth rendering
+    stage?.batchDraw();
   };
 
   const handleMouseUp = () => {
-    isDrawing.current = false;
+    if (isDrawingRef.current) {
+      // End the stroke in Redux
+      dispatch(endStroke());
+    }
+    isDrawingRef.current = false;
   };
+
+  const handleMouseLeave = () => {
+    if (isDrawingRef.current) {
+      // Cancel if mouse leaves while drawing
+      dispatch(cancelStroke());
+    }
+    isDrawingRef.current = false;
+  };
+
+  // For undo/redo to pass to ToolSelector
+  const handleUndo = () => {
+    dispatch(undo());
+  };
+
+  const handleRedo = () => {
+    dispatch(redo());
+  };
+
+  const handleClear = () => {
+    dispatch(clearDrawing());
+  };
+
+  // Calculate if undo/redo is available
+  const canUndo = useAppSelector((state) => state.drawing.history.past.length > 0);
+  const canRedo = useAppSelector((state) => state.drawing.history.future.length > 0);
 
   return (
     <div>
-      <ToolSelector tool={tool} onChange={setTool} onColorChange={setCurrentPenColor} onWidthChange={setCurrentPenWidth} currentWidth={currentPenWidth} onEraserWidthChange={setCurrentEraserWidth} currentEraserWidth={currentEraserWidth} />
+      <ToolSelector 
+        tool={tool} 
+        onChange={setTool} 
+        onColorChange={setCurrentPenColor} 
+        onWidthChange={setCurrentPenWidth} 
+        currentWidth={currentPenWidth} 
+        onEraserWidthChange={setCurrentEraserWidth} 
+        currentEraserWidth={currentEraserWidth}
+        onUndo={handleUndo}
+        onRedo={handleRedo}
+        canUndo={canUndo}
+        canRedo={canRedo}
+      />
+      
       <Stage
         width={stageSize.width || 800}
         height={stageSize.height || 600}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseLeave}
         onTouchStart={handleMouseDown}
         onTouchMove={handleMouseMove}
         onTouchEnd={handleMouseUp}
+        ref={stageRef}
       >
         <Layer>
-          {lines.map((line, i) => (
+          {/* Render completed strokes from Redux */}
+          {strokes.map((stroke) => (
             <Line
-              key={i}
-              points={line.points}
-              stroke={line.color || '#ffffff'}
-                  strokeWidth={line.strokeWidth ?? (line.tool === 'eraser' ? currentEraserWidth : currentPenWidth)}
+              key={stroke.id}
+              points={stroke.points}
+              stroke={stroke.color}
+              strokeWidth={stroke.strokeWidth}
               tension={0.5}
               lineCap="round"
               lineJoin="round"
               globalCompositeOperation={
-                line.tool === 'eraser' ? 'destination-out' : 'source-over'
+                stroke.tool === 'eraser' ? 'destination-out' : 'source-over'
               }
             />
           ))}
+          
+          {/* Render current stroke being drawn */}
+          {currentStroke && currentStroke.points.length > 0 && (
+            <Line
+              points={currentStroke.points}
+              stroke={currentStroke.color}
+              strokeWidth={currentStroke.strokeWidth}
+              tension={0.5}
+              lineCap="round"
+              lineJoin="round"
+              globalCompositeOperation={
+                currentStroke.tool === 'eraser' ? 'destination-out' : 'source-over'
+              }
+            />
+          )}
         </Layer>
       </Stage>
+      
+     
     </div>
   );
 };
 
-export default App;
+export default Canvas;
