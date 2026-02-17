@@ -1,15 +1,16 @@
 'use client';
 import React from 'react';
 import { Stage, Layer, Line } from 'react-konva';
+import Konva from 'konva';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
 import { 
-  startStroke,  // Note: it's startStroke, not startDrawing
+  startStroke,
   addPoint,
-  endStroke,    // Note: it's endStroke, not finishStroke
+  endStroke,
   cancelStroke,
   undo,
   redo,
-  clearDrawing  // Note: it's clearDrawing, not clearAll
+  clearDrawing
 } from '@/store/slices/drawingSlice';
 import ToolSelector from './ToolSelector';
 
@@ -23,18 +24,25 @@ const Canvas: React.FC<CanvasProps> = ({ penColor = '#ffffff' }) => {
   // Redux state
   const strokes = useAppSelector((state) => state.drawing.strokes);
   const currentStroke = useAppSelector((state) => state.drawing.currentStroke);
-  const isDrawingRedux = useAppSelector((state) => state.drawing.isDrawing);
   
-  // Local state for UI
+  // Local state
   const [tool, setTool] = React.useState<string>('pen');
   const [currentPenColor, setCurrentPenColor] = React.useState(penColor);
   const [currentPenWidth, setCurrentPenWidth] = React.useState<number>(5);
   const [currentEraserWidth, setCurrentEraserWidth] = React.useState<number>(20);
+  
+  // 🔴 ADD THIS - Prediction state
+  const [prediction, setPrediction] = React.useState<{
+    className: string;
+    confidence: number;
+  } | null>(null);
+  const [isPredicting, setIsPredicting] = React.useState(false);
 
-  // Ref for mouse tracking
-  const isDrawingRef = React.useRef(false);
+  // Refs
+  const isDrawingRef = React.useRef<boolean>(false);
   const [stageSize, setStageSize] = React.useState({ width: 0, height: 0 });
-  const stageRef = React.useRef<any>(null);
+  const stageRef = React.useRef<Konva.Stage | null>(null);
+  const timeoutRef = React.useRef<number | undefined>(undefined);
 
   React.useEffect(() => {
     const onResize = () =>
@@ -44,20 +52,81 @@ const Canvas: React.FC<CanvasProps> = ({ penColor = '#ffffff' }) => {
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
+  // 🔴 ADD THIS - Auto-predict when strokes change
+  React.useEffect(() => {
+    // Don't predict if drawing is in progress
+    if (isDrawingRef.current) return;
+    
+    // Clear existing timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    
+    // Set new timeout to predict after user stops drawing
+    timeoutRef.current = window.setTimeout(() => {
+      if (strokes.length > 0) {
+        predictDrawing();
+      }
+    }, 500); // Wait 500ms after last stroke
+    
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, [strokes]);
+
+  // 🔴 ADD THIS - Prediction function
+  const predictDrawing = async () => {
+    // Collect all points from completed strokes
+    const allPoints: { x: number; y: number }[] = [];
+    strokes.forEach(stroke => {
+      for (let i = 0; i < stroke.points.length; i += 2) {
+        allPoints.push({
+          x: stroke.points[i],
+          y: stroke.points[i + 1]
+        });
+      }
+    });
+
+    if (allPoints.length === 0) return;
+
+    setIsPredicting(true);
+    try {
+      const response = await fetch('http://localhost:8000/predict', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          points: allPoints,
+          canvas_width: stageSize.width,
+          canvas_height: stageSize.height
+        })
+      });
+      
+      const result = await response.json();
+      setPrediction({
+        className: result.class_name,
+        confidence: result.confidence
+      });
+      
+    } catch (error) {
+      console.error('Prediction error:', error);
+    } finally {
+      setIsPredicting(false);
+    }
+  };
+
   const handleMouseDown = (e: any) => {
     isDrawingRef.current = true;
     const stage = e.target.getStage();
     const pos = stage?.getPointerPosition();
     if (!pos) return;
 
-    // Start a new stroke in Redux
     dispatch(startStroke({ 
       tool,
       color: tool === 'eraser' ? '#ffffff' : currentPenColor,
       strokeWidth: tool === 'eraser' ? currentEraserWidth : currentPenWidth
     }));
-    
-    // Add the first point
     dispatch(addPoint({ x: pos.x, y: pos.y }));
   };
 
@@ -68,16 +137,12 @@ const Canvas: React.FC<CanvasProps> = ({ penColor = '#ffffff' }) => {
     const point = stage?.getPointerPosition();
     if (!point) return;
 
-    // Add point to current stroke in Redux
     dispatch(addPoint({ x: point.x, y: point.y }));
-    
-    // Force redraw for smooth rendering
     stage?.batchDraw();
   };
 
   const handleMouseUp = () => {
     if (isDrawingRef.current) {
-      // End the stroke in Redux
       dispatch(endStroke());
     }
     isDrawingRef.current = false;
@@ -85,26 +150,27 @@ const Canvas: React.FC<CanvasProps> = ({ penColor = '#ffffff' }) => {
 
   const handleMouseLeave = () => {
     if (isDrawingRef.current) {
-      // Cancel if mouse leaves while drawing
       dispatch(cancelStroke());
     }
     isDrawingRef.current = false;
   };
 
-  // For undo/redo to pass to ToolSelector
   const handleUndo = () => {
     dispatch(undo());
+    // Clear prediction when drawing changes
+    setPrediction(null);
   };
 
   const handleRedo = () => {
     dispatch(redo());
+    setPrediction(null);
   };
 
   const handleClear = () => {
     dispatch(clearDrawing());
+    setPrediction(null);
   };
 
-  // Calculate if undo/redo is available
   const canUndo = useAppSelector((state) => state.drawing.history.past.length > 0);
   const canRedo = useAppSelector((state) => state.drawing.history.future.length > 0);
 
@@ -124,6 +190,21 @@ const Canvas: React.FC<CanvasProps> = ({ penColor = '#ffffff' }) => {
         canRedo={canRedo}
       />
       
+      {/* 🔴 ADD THIS - Prediction display */}
+      {(prediction || isPredicting) && (
+        <div className="fixed top-4 right-4 bg-white dark:bg-neutral-800 p-4 rounded-lg shadow-lg">
+          {isPredicting ? (
+            <p className="text-gray-500">Analyzing drawing...</p>
+          ) : prediction && (
+            <>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Prediction:</p>
+              <p className="text-2xl font-bold capitalize">{prediction.className}</p>
+              <p className="text-lg">{(prediction.confidence * 100).toFixed(1)}%</p>
+            </>
+          )}
+        </div>
+      )}
+      
       <Stage
         width={stageSize.width || 800}
         height={stageSize.height || 600}
@@ -137,7 +218,6 @@ const Canvas: React.FC<CanvasProps> = ({ penColor = '#ffffff' }) => {
         ref={stageRef}
       >
         <Layer>
-          {/* Render completed strokes from Redux */}
           {strokes.map((stroke) => (
             <Line
               key={stroke.id}
@@ -153,7 +233,6 @@ const Canvas: React.FC<CanvasProps> = ({ penColor = '#ffffff' }) => {
             />
           ))}
           
-          {/* Render current stroke being drawn */}
           {currentStroke && currentStroke.points.length > 0 && (
             <Line
               points={currentStroke.points}
@@ -170,7 +249,6 @@ const Canvas: React.FC<CanvasProps> = ({ penColor = '#ffffff' }) => {
         </Layer>
       </Stage>
       
-     
     </div>
   );
 };
