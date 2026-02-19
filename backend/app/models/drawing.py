@@ -17,6 +17,7 @@ class DrawingRequest(BaseModel):
     points: List[Point]
     canvas_width: int
     canvas_height: int
+    difficulty: Optional[str] = "medium" 
 
 class PredictionResponse(BaseModel):
     class_name: str

@@ -1,9 +1,17 @@
 import torch
 from torch import nn
-import torch.optim as optim
+import os
 
-with open("classes.txt") as f:
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+classes_file = os.path.join(BACKEND_DIR, 'app', 'data', 'classes.txt')
+loaded_model = os.path.join(BACKEND_DIR, 'app', 'ml_model', 'model_epoch18.pt')
+
+
+with open(classes_file) as f:
     CLASS_NAMES = [line.strip() for line in f]
+
+
 
 
 class Drawmodel(nn.Module):
@@ -47,7 +55,7 @@ class Drawmodel(nn.Module):
 
 
 model = Drawmodel(num_classes=len(CLASS_NAMES))
-model.load_state_dict(torch.load("model_epoch18.pt", weights_only=True, map_location=torch.device('cpu')))
+model.load_state_dict(torch.load(loaded_model, weights_only=True, map_location=torch.device(device)))
 model.eval()
 
 

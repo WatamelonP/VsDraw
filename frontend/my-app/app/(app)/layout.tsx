@@ -25,11 +25,11 @@ export default function HomeLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning={true}>
-      <body>
+      <body className="dark">
         <ThemeProvider
             attribute="class"
-            defaultTheme="system"
-            enableSystem
+            defaultTheme="dark"
+            enableSystem={false}
             disableTransitionOnChange
           >
             {children}
