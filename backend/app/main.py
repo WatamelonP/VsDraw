@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi import APIRouter
 from .api.main import router
 from .core.config import settings
+from .services.redis_service import redis_service
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -15,6 +16,15 @@ if settings.BACKEND_CORS_ORIGINS:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+@app.on_event("startup")
+async def startup():
+    await redis_service.connect()
+
+
+@app.on_event("shutdown")
+async def shutdown():
+    await redis_service.disconnect()
 
 app.include_router(router, prefix=settings.API_V1_STR)
 

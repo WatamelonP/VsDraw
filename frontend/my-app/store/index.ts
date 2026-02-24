@@ -2,12 +2,13 @@ import { configureStore } from '@reduxjs/toolkit';
 import roomReducer from './slices/roomSlice';
 import userReducer from './slices/userSlice';
 import drawingReducer from './slices/drawingSlice';
-
+import gameSlice from './slices/gameSlice';
 export const store = configureStore({
   reducer: {
     room: roomReducer,
     user: userReducer,
     drawing: drawingReducer,
+    game: gameSlice,
   },
 });
 

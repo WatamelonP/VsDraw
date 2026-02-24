@@ -3,12 +3,14 @@ import torch
 import numpy as np
 import cv2
 from app.models.drawing import DrawingRequest, PredictionResponse
-from app.ml_model.inference import infer, CLASS_NAMES
+
 from app.services.randomizer import randomizer_service, RandomizerService
-from app.services.preprocessing import preprocessing_service
+
 from app.models.randomizer import RandomizerResponse, RandomizerRequest
 import os
 from typing import List, Optional
+from app.services.prediction import prediction_service
+from app.services.preprocessing import preprocessing_service as mcdonalds
 
 router = APIRouter(prefix="/drawing", tags=["drawing"])
 
@@ -35,11 +37,18 @@ async def set_target(request: RandomizerRequest):
 
 @router.post("/predict", response_model=PredictionResponse)
 async def predict(request: DrawingRequest):
-    current_target = randomizer_service.get_class()  # Use it
-    # ... prediction logic that uses current_target
+    target_index = request.classes.index(request.target)
+    
+    # placeholder until inference is wired in
+    # mock_scores = [1.0 / len(request.classes)] * len(request.classes)
+    # target_confidence = mock_scores[target_index]
+
+    scores = prediction_service.predict(mcdonalds.render_to_tensor_from_request(request), request.classes, request.target)
+
     return PredictionResponse(
-        class_name=current_target,
-        confidence=0.95
+        class_name=request.target,
+        confidence=scores,
+        classes=request.classes
     )
 
 

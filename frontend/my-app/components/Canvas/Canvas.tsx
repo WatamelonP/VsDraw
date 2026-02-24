@@ -41,6 +41,10 @@ const Canvas: React.FC<CanvasProps> = ({
   const [stageSize, setStageSize] = React.useState({ width: 0, height: 0 });
   const stageRef = React.useRef<Konva.Stage | null>(null);
 
+
+  const currentTarget = useAppSelector((state) => state.game.currentTarget);
+  const classes = useAppSelector((state) => state.game.classes);
+
   React.useEffect(() => {
     const onResize = () =>
       setStageSize({ width: window.innerWidth, height: window.innerHeight });
@@ -115,6 +119,8 @@ const Canvas: React.FC<CanvasProps> = ({
       <Prediction 
         strokes={strokes}
         stageSize={stageSize}
+        target={currentTarget ?? ''}
+        classes={classes}
         difficulty={difficulty}
       />
       

@@ -1,3 +1,4 @@
+# app/ml_model/model.py
 import torch
 from torch import nn
 import os
@@ -5,72 +6,56 @@ import os
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 classes_file = os.path.join(BACKEND_DIR, 'app', 'data', 'classes.txt')
-loaded_model = os.path.join(BACKEND_DIR, 'app', 'ml_model', 'model_epoch18.pt')
+trained_model = os.path.join(BACKEND_DIR, 'app', 'ml_model', 'model_epoch18.pt')
 
 
 with open(classes_file) as f:
     CLASS_NAMES = [line.strip() for line in f]
 
+class DrawModel(nn.Module):
+    def __init__(self, num_classes: int):
+        super().__init__()
+        self.layer_stack = nn.Sequential(
+            nn.Conv2d(1, 32, 3, padding=1),
+            nn.BatchNorm2d(32),
+            nn.ReLU(),
+            nn.Conv2d(32, 32, 3, padding=1),
+            nn.BatchNorm2d(32),
+            nn.ReLU(),
+            nn.MaxPool2d(2),
 
+            nn.Conv2d(32, 64, 3, padding=1),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, 3, padding=1),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.MaxPool2d(2),
 
+            nn.Conv2d(64, 128, 3, padding=1),
+            nn.BatchNorm2d(128),
+            nn.ReLU(),
+            nn.Conv2d(128, 128, 3, padding=1),
+            nn.BatchNorm2d(128),
+            nn.ReLU(),
+            nn.MaxPool2d(2),
+        )
+        self.classifier = nn.Sequential(
+            nn.AdaptiveAvgPool2d((1, 1)),
+            nn.Flatten(),
+            nn.Linear(128, num_classes)
+        )
 
-class Drawmodel(nn.Module):
-  def __init__(self, num_classes: int):
-    super().__init__()
-    self.layer_stack = nn.Sequential(
-      nn.Conv2d(1, 32, 3, padding=1),
-      nn.BatchNorm2d(32),
-      nn.ReLU(),
-      nn.Conv2d(32,32,3, padding=1),
-      nn.BatchNorm2d(32),
-      nn.ReLU(),
-      nn.MaxPool2d(2),
+    def forward(self, x):
+        x = self.layer_stack(x)
+        x = self.classifier(x)
+        return x
 
-      nn.Conv2d(32, 64, 3, padding=1),
-      nn.BatchNorm2d(64),
-      nn.ReLU(),
-      nn.Conv2d(64,64,3, padding=1),
-      nn.BatchNorm2d(64),
-      nn.ReLU(),
-      nn.MaxPool2d(2),
+model = DrawModel(num_classes=len(CLASS_NAMES))
+model.load_state_dict(torch.load(trained_model, map_location=device))
+model.eval()
 
-      nn.Conv2d(64, 128, 3, padding=1),
-      nn.BatchNorm2d(128),
-      nn.ReLU(),
-      nn.Conv2d(128,128,3, padding=1),
-      nn.BatchNorm2d(128),
-      nn.ReLU(),
-      nn.MaxPool2d(2),
-    )
-    self.classifier = nn.Sequential(
-      nn.AdaptiveAvgPool2d((1, 1)),
-      nn.Flatten(),
-      nn.Linear(128, num_classes)
-)
-
-  def forward(self, x):
-    x = self.layer_stack(x)
-    x = self.classifier(x)
-    return x
-
-
-model = Drawmodel(num_classes=len(CLASS_NAMES))
-# model.load_state_dict(torch.load(loaded_model, weights_only=True, map_location=torch.device(device)))
-# model.eval()
-
-
-# def infer(image_tensor: torch.Tensor) -> torch.Tensor:
-#   model.eval()
-#   with torch.inference_mode():
-#     output = model(image_tensor)
-#     probabilities = nn.functional.softmax(output, dim=1)
-#   return probabilities
-
-
-
-
-
-
+loaded_model = model
 # if __name__ == "__main__":
 #             # Dummy input for testing
 #             dummy_input = torch.tensor([[[  0.,   0.,   0.,   0.,   0.,   0.,   0.,   0.,   0.,   0.,   0.,
@@ -244,11 +229,11 @@ model = Drawmodel(num_classes=len(CLASS_NAMES))
 #             0.,   0.,   0.,   0.,   0.,   0.,   0.,   0.,   0.,   0.,   0.,
 #             0.,   0.,   0.,   0.,   0.,   0.]]])
 
-#             probs = infer(dummy_input.unsqueeze(0))
-#             preds = torch.argmax(probs, dim=1)
-#             print(CLASS_NAMES[preds])
+#             # probs = infer(dummy_input.unsqueeze(0))
+#             # preds = torch.argmax(probs, dim=1)
+#             # print(CLASS_NAMES[preds])
            
-#             probs2 = infer(dummy_input2.unsqueeze(0))
-#             preds2 = torch.argmax(probs2, dim=1)
-#             print(CLASS_NAMES[preds2])
+#             # probs2 = infer(dummy_input2.unsqueeze(0))
+#             # preds2 = torch.argmax(probs2, dim=1)
+#             # print(CLASS_NAMES[preds2])
             

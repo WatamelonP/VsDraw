@@ -21,7 +21,6 @@ class PreprocessingService:
             cv2.line(canvas, (x1, y1), (x2, y2), 255, thickness=3)
         
         low_res = cv2.resize(canvas, (28, 28), interpolation=cv2.INTER_AREA)
-        low_res = low_res / 255.0
         
         tensor = torch.FloatTensor(low_res).unsqueeze(0)
         return tensor

@@ -1,5 +1,5 @@
 from pydantic_settings import BaseSettings
-from typing import List
+from typing import List, Optional
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "QuickDraw API"
@@ -11,6 +11,11 @@ class Settings(BaseSettings):
     CLASSES_PATH: str = "ml_model/classes.txt"
     
     REDIS_URL: str = "redis://localhost:6379"
+
+    REDIS_HOST: str = "localhost"
+    REDIS_PORT: int = 6379
+    REDIS_DB: int = 0
+    REDIS_PASSWORD: Optional[str] = None
     
     class Config:
         env_file = ".env"
