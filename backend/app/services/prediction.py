@@ -28,7 +28,7 @@ class PredictionService:
             print(f"after softmax: {output}")
         target_index = CLASS_NAMES.index(target)
         confidence = output[target_index].item()
-        
+        print(f"target: {target}, index: {target_index}, confidence: {confidence}")
         return confidence
 
 prediction_service = PredictionService()
