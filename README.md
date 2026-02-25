@@ -1,4 +1,4 @@
-<img width="1593" height="943" alt="image" src="https://github.com/user-attachments/assets/0d5aebf7-009d-4fc8-91d8-527de4d98473" /># 🎨 Sketch or Bust *(working title)*
+# 🎨 Sketch or Bust *(working title)*
 
 > A fast-paced multiplayer drawing and guessing game powered by AI inference. Draw the prompt, beat the clock, and let the model judge your skills.
 
