@@ -20,12 +20,13 @@ type Props = {
   currentWidth?: number;
   onEraserWidthChange?: (width: number) => void;
   currentEraserWidth?: number;
-  // Add these new props
   onUndo?: () => void;
   onRedo?: () => void;
   canUndo?: boolean;
   canRedo?: boolean;
 };
+
+type SnapSide = 'top' | 'bottom' | 'left' | 'right';
 
 const CURSORS = {
   pen: "url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"white\" stroke-width=\"2\"><path d=\"M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z\"/></svg>') 0 24, auto",
@@ -50,6 +51,7 @@ const ToolSelector: React.FC<Props> = ({
 }) => {
   const [isDragging, setIsDragging] = React.useState(false);
   const [position, setPosition] = React.useState({ x: 50, y: 50 });
+  const [snapSide, setSnapSide] = React.useState<SnapSide>('bottom');
   const [popoverOpen, setPopoverOpen] = React.useState<null | 'color' | 'pen' | 'eraser'>(null);
   const [penColor, setPenColor] = React.useState<string>("#ffffff");
   const [initialPositioned, setInitialPositioned] = React.useState(false);
@@ -58,6 +60,8 @@ const ToolSelector: React.FC<Props> = ({
   const dragOffsetRef = React.useRef({ x: 0, y: 0 });
   const lastPositionRef = React.useRef(position);
   const resizeObserverRef = React.useRef<ResizeObserver | null>(null);
+
+  const isVertical = snapSide === 'left' || snapSide === 'right';
 
   const snapPositions = {
     top: (dockWidth: number, dockHeight: number) => ({ x: (window.innerWidth - dockWidth) / 2, y: 20 }),
@@ -77,31 +81,21 @@ const ToolSelector: React.FC<Props> = ({
     };
   };
 
-  // Apply cursor to body and also to the dock container
   React.useEffect(() => {
     document.body.style.cursor = CURSORS[tool as keyof typeof CURSORS] ?? "default";
-    
     if (dragRef.current) {
       dragRef.current.style.cursor = CURSORS[tool as keyof typeof CURSORS] ?? "default";
     }
-
-    return () => {
-      document.body.style.cursor = "default";
-    };
+    return () => { document.body.style.cursor = "default"; };
   }, [tool]);
 
-  // Initial positioning with ResizeObserver
   React.useEffect(() => {
     if (!dragRef.current) return;
-
-    if (resizeObserverRef.current) {
-      resizeObserverRef.current.disconnect();
-    }
+    if (resizeObserverRef.current) resizeObserverRef.current.disconnect();
 
     resizeObserverRef.current = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const { width, height } = entry.contentRect;
-        
         if (width > 0 && height > 0 && !initialPositioned) {
           const bottom = snapPositions.bottom(width, height);
           setPosition(bottom);
@@ -113,15 +107,9 @@ const ToolSelector: React.FC<Props> = ({
     });
 
     resizeObserverRef.current.observe(dragRef.current);
-
-    return () => {
-      if (resizeObserverRef.current) {
-        resizeObserverRef.current.disconnect();
-      }
-    };
+    return () => { resizeObserverRef.current?.disconnect(); };
   }, [initialPositioned]);
 
-  // Fallback timeout
   React.useEffect(() => {
     const timeout = setTimeout(() => {
       if (!initialPositioned && dragRef.current) {
@@ -133,7 +121,6 @@ const ToolSelector: React.FC<Props> = ({
         setInitialPositioned(true);
       }
     }, 200);
-    
     return () => clearTimeout(timeout);
   }, [initialPositioned]);
 
@@ -165,25 +152,25 @@ const ToolSelector: React.FC<Props> = ({
     const dockWidth = dragRef.current?.offsetWidth || 200;
     const dockHeight = dragRef.current?.offsetHeight || 64;
     const pos = lastPositionRef.current || position;
-
     const threshold = 100;
-    
+
     if (pos.y < threshold) {
+      setSnapSide('top');
       setPosition(clampPosition(snapPositions.top(dockWidth, dockHeight), dockWidth, dockHeight));
       return;
     }
-
     if (pos.y > window.innerHeight - threshold) {
+      setSnapSide('bottom');
       setPosition(clampPosition(snapPositions.bottom(dockWidth, dockHeight), dockWidth, dockHeight));
       return;
     }
-
     if (pos.x < threshold) {
+      setSnapSide('left');
       setPosition(clampPosition(snapPositions.left(dockWidth, dockHeight), dockWidth, dockHeight));
       return;
     }
-
     if (pos.x > window.innerWidth - threshold) {
+      setSnapSide('right');
       setPosition(clampPosition(snapPositions.right(dockWidth, dockHeight), dockWidth, dockHeight));
       return;
     }
@@ -201,60 +188,38 @@ const ToolSelector: React.FC<Props> = ({
     };
   }, [isDragging]);
 
-  // Handle window resize
   React.useEffect(() => {
     const handleResize = () => {
       if (dragRef.current) {
         const dockWidth = dragRef.current.offsetWidth;
         const dockHeight = dragRef.current.offsetHeight;
         const clamped = clampPosition(position, dockWidth, dockHeight);
-        
         if (clamped.x !== position.x || clamped.y !== position.y) {
           setPosition(clamped);
           lastPositionRef.current = clamped;
         }
       }
     };
-
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, [position]);
 
   const handleToolChange = (newTool: string) => {
-    // Handle undo/redo separately
-    if (newTool === "undo") {
-      onUndo?.();
-      return;
-    }
-    
-    if (newTool === "redo") {
-      onRedo?.();
-      return;
-    }
+    if (newTool === "undo") { onUndo?.(); return; }
+    if (newTool === "redo") { onRedo?.(); return; }
 
-    // Toggle color popover without changing the active tool
     if (newTool === "color") {
       setPopoverOpen((prev) => (prev === 'color' ? null : 'color'));
       return;
     }
-
-    // Toggle pen popover and activate pen when opening
     if (newTool === 'pen') {
-      if (popoverOpen === 'pen') {
-        setPopoverOpen(null);
-        return;
-      }
+      if (popoverOpen === 'pen') { setPopoverOpen(null); return; }
       setPopoverOpen('pen');
       onChange('pen');
       return;
     }
-
-    // Toggle eraser popover and activate eraser when opening
     if (newTool === 'eraser') {
-      if (popoverOpen === 'eraser') {
-        setPopoverOpen(null);
-        return;
-      }
+      if (popoverOpen === 'eraser') { setPopoverOpen(null); return; }
       setPopoverOpen('eraser');
       onChange('eraser');
       return;
@@ -267,32 +232,36 @@ const ToolSelector: React.FC<Props> = ({
   const items = [
     {
       title: "Undo",
-      icon: <IconArrowBackUp className={`h-full w-full ${!canUndo ? 'opacity-30' : 'text-neutral-500 dark:text-neutral-300'}`} />,
+      icon: <IconArrowBackUp className={`h-full w-full ${!canUndo ? 'opacity-30' : ''}`} />,
       onClick: () => handleToolChange("undo"),
-      disabled: !canUndo,
     },
     {
       title: "Redo",
-      icon: <IconArrowForwardUp className={`h-full w-full ${!canRedo ? 'opacity-30' : 'text-neutral-500 dark:text-neutral-300'}`} />,
+      icon: <IconArrowForwardUp className={`h-full w-full ${!canRedo ? 'opacity-30' : ''}`} />,
       onClick: () => handleToolChange("redo"),
-      disabled: !canRedo,
     },
     {
       title: "Pen",
-      icon: <IconPencil className="h-full w-full text-neutral-500 dark:text-neutral-300" />,
+      icon: <IconPencil className="h-full w-full" />,
       onClick: () => handleToolChange("pen"),
     },
     {
       title: "Eraser",
-      icon: <IconEraser className="h-full w-full text-neutral-500 dark:text-neutral-300" />,
+      icon: <IconEraser className="h-full w-full" />,
       onClick: () => handleToolChange("eraser"),
     },
     {
       title: "Color",
-      icon: <IconPalette className="h-full w-full text-neutral-500 dark:text-neutral-300" />,
+      icon: <IconPalette className="h-full w-full" />,
       onClick: () => handleToolChange("color"),
     },
   ];
+
+  // Popover side depends on snap side
+  const popoverSide = snapSide === 'bottom' ? 'top'
+    : snapSide === 'top' ? 'bottom'
+    : snapSide === 'left' ? 'right'
+    : 'left';
 
   return (
     <Popover open={popoverOpen !== null} onOpenChange={(open) => { if (!open) setPopoverOpen(null); }}>
@@ -316,44 +285,35 @@ const ToolSelector: React.FC<Props> = ({
             items={items}
             desktopClassName="!mx-0"
             mobileClassName="!translate-y-0"
+            orientation={isVertical ? 'vertical' : 'horizontal'}
           />
         </div>
       </PopoverTrigger>
 
       <PopoverContent
-        side="top"
+        side={popoverSide}
         align="center"
         sideOffset={10}
         className="z-[1001] w-auto p-0 bg-transparent border-none shadow-none"
         onOpenAutoFocus={(e) => e.preventDefault()}
-        onMouseEnter={() => {
-          document.body.style.cursor = "default";
-        }}
-        onMouseLeave={() => {
-          document.body.style.cursor = CURSORS[tool as keyof typeof CURSORS] ?? "default";
-        }}
+        onMouseEnter={() => { document.body.style.cursor = "default"; }}
+        onMouseLeave={() => { document.body.style.cursor = CURSORS[tool as keyof typeof CURSORS] ?? "default"; }}
       >
-        <div className="bg-white dark:bg-neutral-800 rounded-xl shadow-lg p-2" style={{ cursor: "default" }}>
+        <div className="bg-popover border border-border rounded-xl shadow-lg p-2" style={{ cursor: "default" }}>
           {popoverOpen === 'color' && (
             <ColorPicker onColorSelect={(color) => {
               setPenColor(color);
               onColorChange?.(color);
             }} />
           )}
-
           {popoverOpen === 'pen' && (
             <div className="p-2">
-              <PenSlider value={currentWidth ?? 5} onChange={(w) => {
-                onWidthChange?.(w);
-              }} />
+              <PenSlider value={currentWidth ?? 5} onChange={(w) => { onWidthChange?.(w); }} />
             </div>
           )}
-
           {popoverOpen === 'eraser' && (
             <div className="p-2">
-              <EraserSlider value={currentEraserWidth ?? 20} onChange={(w) => {
-                onEraserWidthChange?.(w);
-              }} />
+              <EraserSlider value={currentEraserWidth ?? 20} onChange={(w) => { onEraserWidthChange?.(w); }} />
             </div>
           )}
         </div>
