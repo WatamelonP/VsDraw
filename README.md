@@ -10,6 +10,7 @@ Sketch or Bust is a web-based drawing game where players are given a random clas
 
 The project is currently a **work in progress**. The core drawing pipeline and AI inference are functional. Multiplayer rooms, WebSocket support, Submit/Next Drawing and the full game loop are planned for future development.
 
+(yes im bad at drawing sorry) 
 <img width="1593" height="943" alt="image" src="https://github.com/user-attachments/assets/e1bcdb37-b2f3-4f72-8b1b-bb37cfc373c4" />
 
 ---
@@ -31,6 +32,11 @@ The project is currently a **work in progress**. The core drawing pipeline and A
 - 🔴 Redis-backed shared room state
 - 🎮 Game modes (speed draw, shrinking canvas, etc.)
 
+### Changes
+- 🖊️ Will remove eraser function (Temporary)
+    - Just use the undo button (lol)
+    - Only until I find a way to deal with the ressidual noise that affects the inference. 
+    
 ---
 
 ## 🛠️ Tech Stack
