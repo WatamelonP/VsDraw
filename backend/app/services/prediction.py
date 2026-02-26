@@ -17,7 +17,8 @@ class PredictionService:
     def predict(self, tensor: torch.Tensor, classes: list[str], target: str) -> float:
         # ML prediction
         self.model.eval()
-
+    
+        print(f"input tensor: {tensor}")
         with torch.inference_mode():
             output = self.model(tensor.unsqueeze(0).to(device))
             print(f"raw output shape: {output.shape}")
