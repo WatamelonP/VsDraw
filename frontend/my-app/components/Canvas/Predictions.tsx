@@ -29,6 +29,16 @@ const Prediction: React.FC<PredictionProps> = ({
     if (!target || classes.length === 0) return; // guard: no game state yet
 
     const allPoints: { x: number; y: number }[] = [];
+    strokes
+    .filter((stroke: any) => stroke.tool !== 'eraser')
+    .forEach((stroke: any) => {
+      for (let i = 0; i < stroke.points.length; i += 2) {
+        allPoints.push({ x: stroke.points[i], y: stroke.points[i + 1] });
+      }
+    });
+
+  if (allPoints.length === 0) return;
+
     strokes.forEach((stroke: any) => {
       for (let i = 0; i < stroke.points.length; i += 2) {
         allPoints.push({ x: stroke.points[i], y: stroke.points[i + 1] });

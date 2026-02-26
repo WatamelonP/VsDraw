@@ -1,6 +1,6 @@
 'use client';
 import React from 'react';
-import { Stage, Layer, Line } from 'react-konva';
+import { Stage, Layer, Line, Rect } from 'react-konva';
 import Konva from 'konva';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
 import { 
@@ -44,6 +44,14 @@ const Canvas: React.FC<CanvasProps> = ({
 
   const currentTarget = useAppSelector((state) => state.game.currentTarget);
   const classes = useAppSelector((state) => state.game.classes);
+
+  React.useEffect(() => {
+  // if user has erased everything, clear stroke history too
+  const hasVisibleStrokes = strokes.some(s => s.tool !== 'eraser');
+  if (!hasVisibleStrokes && strokes.length > 0) {
+    dispatch(clearDrawing());
+  }
+}, [strokes]);
 
   React.useEffect(() => {
     const onResize = () =>
@@ -136,6 +144,15 @@ const Canvas: React.FC<CanvasProps> = ({
         onTouchEnd={handleMouseUp}
         ref={stageRef}
       >
+         <Layer listening={false}>
+    <Rect
+      x={0}
+      y={0}
+      width={stageSize.width || 800}
+      height={stageSize.height || 600}
+    />
+  </Layer>
+
         <Layer>
           {strokes.map((stroke) => (
             <Line

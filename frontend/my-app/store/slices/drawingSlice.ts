@@ -1,5 +1,7 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
+
+
 // Define the structure of a single stroke/line
 interface Stroke {
   id: string;
@@ -103,7 +105,7 @@ const drawingSlice = createSlice({
         state.lastUpdate = Date.now();
       }
     },
-
+    
     // Undo last stroke
     undo: (state) => {
       if (state.history.past.length > 0) {

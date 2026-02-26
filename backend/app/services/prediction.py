@@ -1,10 +1,8 @@
 
-
-
 import os
 from ..ml_model.model import CLASS_NAMES, loaded_model
 # from ..api.routes.drawing import render_to_tensor
-import cv2
+# import cv2
 import numpy as np
 import torch
 
@@ -26,6 +24,7 @@ class PredictionService:
             print(f"raw output: {output}")
             output = torch.softmax(output, dim=1).squeeze()
             print(f"after softmax: {output}")
+
         target_index = CLASS_NAMES.index(target)
         confidence = output[target_index].item()
         print(f"target: {target}, index: {target_index}, confidence: {confidence}")
