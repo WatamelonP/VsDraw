@@ -1,4 +1,4 @@
-# 🎨 Sketch or Bust *(working title)*
+# 🎨 VsDraw *(working title)*
 
 > A fast-paced multiplayer drawing and guessing game powered by AI inference. Draw the prompt, beat the clock, and let the model judge your skills.
 
