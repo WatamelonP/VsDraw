@@ -43,13 +43,13 @@ async def predict(request: DrawingRequest):
     # mock_scores = [1.0 / len(request.classes)] * len(request.classes)
     # target_confidence = mock_scores[target_index]
 
-    scores = prediction_service.predict(mcdonalds.render_to_tensor_from_request(request), request.classes, request.target)
+    confidence, top_guesses = prediction_service.predict(mcdonalds.render_to_tensor_from_request(request), request.classes, request.target)
 
     return PredictionResponse(
         class_name=request.target,
-        confidence=scores,
-        classes=request.classes
-    )
+        confidence=confidence,
+        top_guesses=top_guesses
+    )       
 
 
 

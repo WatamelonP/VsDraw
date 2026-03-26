@@ -26,10 +26,14 @@ class DrawingRequest(BaseModel):
         if self.target not in self.classes:
             raise ValueError(f"target '{self.target}' must be one of the provided classes")
         return self
+    def validate_canvas_size(self) -> Self:
+        if self.canvas_width == 0 or self.canvas_height == 0:
+            raise ValueError("canvas_width and canvas_height must be greater than 0")
+        return self
 
 class PredictionResponse(BaseModel):
     class_name: str
     confidence: float
-    classes: List[str] = []
+    top_guesses: list[dict]
 
     

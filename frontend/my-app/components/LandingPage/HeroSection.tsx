@@ -5,6 +5,9 @@ import { useState } from "react";
 import { Variants } from "motion/react";
 import WobblyBlob from "./WobblyBlob";
 import GameSetupModal from "../Customization/GameSetUp";
+import { useRouter } from "next/navigation";
+
+
 
 const containerVariants = {
   hidden: {},
@@ -26,6 +29,8 @@ const itemVariants: Variants = {
 
 export default function HeroSection() {
   const [modalOpen, setModalOpen] = useState(false);
+  const router = useRouter();
+
 
   return (
     <>
@@ -58,8 +63,22 @@ export default function HeroSection() {
           variants={itemVariants}
           className="text-lg md:text-xl text-muted-foreground max-w-md"
         >
-          Draw it. Guess it. Beat everyone before time runs out.
+          Draw it. Score higher. Beat everyone before time runs out.
         </motion.p>
+
+
+
+        <motion.div variants={itemVariants} className="flex gap-4">
+          <motion.button
+            onClick={() => router.push("/practice")}
+            className="px-10 py-4 rounded-2xl bg-primary text-primary-foreground font-black uppercase"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.97 }}
+          >
+            Practice Mode
+          </motion.button>
+        </motion.div>
+
 
         <motion.div variants={itemVariants} className="flex gap-4">
           <motion.button

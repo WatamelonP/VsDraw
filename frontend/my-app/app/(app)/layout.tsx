@@ -6,6 +6,8 @@ import "../globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Provider } from "react-redux";
 import { store } from "@/store";
+import { PersistGate } from 'redux-persist/integration/react';
+import { persistor } from '@/store';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,9 +28,11 @@ export default function HomeLayout({ children }: { children: React.ReactNode }) 
       enableSystem={false}
       disableTransitionOnChange
     >
-      <Provider store={store}>
-        {children}
-      </Provider>
+        <Provider store={store}>
+            <PersistGate loading={null} persistor={persistor}>
+              {children}
+            </PersistGate>
+          </Provider>
     </ThemeProvider>
   );
 }

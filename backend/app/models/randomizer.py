@@ -4,7 +4,7 @@ from typing import List, Optional
 
 
 class RandomizerRequest(BaseModel):
-    count: int = Field(default=1, ge=1, le=20)
+    count: int = Field(default=1, ge=1, le=38) # Assuming we have 38 classes total
     # category: Optional[str] = None
     repetitions: bool = False
     exclude_classes: List[str] = Field(default_factory=list)

@@ -14,22 +14,31 @@ class PredictionService:
         self.model = loaded_model.to(device)
 
 
-    def predict(self, tensor: torch.Tensor, classes: list[str], target: str) -> float:
+    def predict(self, tensor: torch.Tensor, classes: list[str], target: str) -> tuple[float, list[dict[str, float]]]:
         # ML prediction
         self.model.eval()
     
-        print(f"input tensor: {tensor}")
+        # print(f"input tensor: {tensor}")
         with torch.inference_mode():
             output = self.model(tensor.unsqueeze(0).to(device))
-            print(f"raw output shape: {output.shape}")
-            print(f"raw output: {output}")
+            # print(f"raw output shape: {output.shape}")
+            # print(f"raw output: {output}")
             output = torch.softmax(output, dim=1).squeeze()
-            print(f"after softmax: {output}")
+            # print(f"after softmax: {output}")
 
         target_index = CLASS_NAMES.index(target)
         confidence = output[target_index].item()
-        print(f"target: {target}, index: {target_index}, confidence: {confidence}")
-        return confidence
+
+        top_k = torch.topk(output, 3)
+        top_guesses = [
+            {"class_name": CLASS_NAMES[idx], "confidence": round(output[idx].item(), 4)}
+            for idx in top_k.indices.tolist()
+        ]
+        # print(f"target: {target}, index: {target_index}, confidence: {confidence}")
+        # print(f"all target classes: {classes}")
+        
+        
+        return confidence, top_guesses
 
 prediction_service = PredictionService()
         
