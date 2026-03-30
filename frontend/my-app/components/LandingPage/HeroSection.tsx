@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Variants } from "motion/react";
 import WobblyBlob from "./WobblyBlob";
 import GameSetupModal from "../Customization/GameSetUp";
+import MultiplayerSetupModal from "../Customization/MultiplayerSetup";
 import { useRouter } from "next/navigation";
 
 
@@ -29,6 +30,7 @@ const itemVariants: Variants = {
 
 export default function HeroSection() {
   const [modalOpen, setModalOpen] = useState(false);
+  const [multiplayerModalOpen, setMultiplayerModalOpen] = useState(false);
   const router = useRouter();
 
 
@@ -91,8 +93,10 @@ export default function HeroSection() {
           </motion.button>
 
           <motion.button
-            disabled
-            className="px-10 py-4 rounded-2xl font-black uppercase bg-primary text-primary-foreground disabled:bg-muted disabled:text-muted-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={() => setMultiplayerModalOpen(true)}
+            className="px-10 py-4 rounded-2xl font-black uppercase bg-primary text-primary-foreground"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.97 }}
           >
             Multiplayer
           </motion.button>
@@ -102,6 +106,11 @@ export default function HeroSection() {
       <GameSetupModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
+      />
+
+      <MultiplayerSetupModal
+        isOpen={multiplayerModalOpen}
+        onClose={() => setMultiplayerModalOpen(false)}
       />
     </>
   );

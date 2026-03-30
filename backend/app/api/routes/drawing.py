@@ -45,11 +45,13 @@ async def predict(request: DrawingRequest):
 
     confidence, top_guesses = prediction_service.predict(mcdonalds.render_to_tensor_from_request(request), request.classes, request.target)
 
+    top_guess_name = top_guesses[0]["class_name"] if top_guesses else request.target
+    
     return PredictionResponse(
-        class_name=request.target,
+        class_name=top_guess_name,
         confidence=confidence,
         top_guesses=top_guesses
-    )       
+    ) 
 
 
 

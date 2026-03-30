@@ -1,15 +1,13 @@
-import redis.asyncio as redis
 import json
+import time
+import redis.asyncio as redis
 from typing import Optional, Any, Dict
 from ..core.config import settings
 
 class RedisService:
     def __init__(self):
         # Build Redis URL
-        if settings.REDIS_PASSWORD:
-            self.redis_url = f"redis://:{settings.REDIS_PASSWORD}@{settings.REDIS_HOST}:{settings.REDIS_PORT}/{settings.REDIS_DB}"
-        else:
-            self.redis_url = f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}/{settings.REDIS_DB}"
+        self.redis_url = settings.REDIS_URL
         self.client: Optional[redis.Redis] = None  # Add type hint
     
     async def connect(self) -> None:
@@ -27,6 +25,13 @@ class RedisService:
         if self.client:
             await self.client.close()  # type: ignore
             print("❌ Disconnected from Redis")
+            
+    async def room_exists(self, room_id: str) -> bool:
+        if not self.client:
+            raise Exception("Redis not connected")
+        key = f"room:{room_id}:players"
+        count = await self.client.hlen(key)  # type: ignore
+        return count > 0
     
     # Room management
     async def create_room(self, room_id: str, room_data: dict) -> bool:
@@ -114,6 +119,47 @@ class RedisService:
             raise Exception("Redis not connected")
         key = f"scores:{room_id}"
         return await self.client.hgetall(key)  # type: ignore
+
+    # Stroke management
+    async def add_stroke(self, room_id: str, stroke: dict) -> None:
+        if not self.client:
+            raise Exception("Redis not connected")
+        key = f"room:{room_id}:strokes"
+        await self.client.rpush(key, json.dumps(stroke))  # type: ignore
+
+    async def get_strokes(self, room_id: str) -> list:
+        if not self.client:
+            raise Exception("Redis not connected")
+        key = f"room:{room_id}:strokes"
+        strokes = await self.client.lrange(key, 0, -1)  # type: ignore
+        return [json.loads(s) for s in strokes]
+
+    async def clear_strokes(self, room_id: str) -> None:
+        if not self.client:
+            raise Exception("Redis not connected")
+        key = f"room:{room_id}:strokes"
+        await self.client.delete(key)  # type: ignore
+
+    # Pub/Sub for real-time communication
+    async def publish_event(self, room_id: str, event_type: str, data: dict) -> None:
+        """Publish an event to a room's channel"""
+        if not self.client:
+            raise Exception("Redis not connected")
+        channel = f"room:{room_id}:events"
+        message = json.dumps({
+            "type": event_type,
+            "data": data,
+            "timestamp": time.time()
+        })
+        await self.client.publish(channel, message)
+
+    async def subscribe(self, room_id: str):
+        """Subscribe to a room's channel"""
+        if not self.client:
+            raise Exception("Redis not connected")
+        pubsub = self.client.pubsub()
+        await pubsub.subscribe(f"room:{room_id}:events")
+        return pubsub
 
 # Create singleton
 redis_service = RedisService()

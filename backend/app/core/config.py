@@ -5,7 +5,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "QuickDraw API"
     API_V1_STR: str = "/api/v1"
    
-    BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:3000"]
+    BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://192.168.1.6:3000"]
     
     MODEL_PATH: str = "ml_model/model_epoch18.pt"
     CLASSES_PATH: str = "ml_model/classes.txt"

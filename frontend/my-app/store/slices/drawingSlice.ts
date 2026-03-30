@@ -49,7 +49,7 @@ const drawingSlice = createSlice({
     }>) => {
       state.isDrawing = true;
       state.currentStroke = {
-        id: Date.now().toString(), // Simple ID generation
+        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // more robust ID
         tool: action.payload.tool,
         points: [],
         color: action.payload.color,
@@ -89,10 +89,13 @@ const drawingSlice = createSlice({
 
     // Add a stroke from another user (for collaboration)
     addRemoteStroke: (state, action: PayloadAction<Stroke>) => {
-      state.history.past.push([...state.strokes]);
-      state.history.future = [];
-      state.strokes.push(action.payload);
-      state.lastUpdate = Date.now();
+      const exists = state.strokes.some(s => s.id === action.payload.id);
+      if (!exists) {
+        state.history.past.push([...state.strokes]);
+        state.history.future = [];
+        state.strokes.push(action.payload);
+        state.lastUpdate = Date.now();
+      }
     },
 
     // Clear the entire drawing
@@ -104,6 +107,15 @@ const drawingSlice = createSlice({
         state.currentStroke = null;
         state.lastUpdate = Date.now();
       }
+    },
+
+    // Completely wipe drawing and history (for when a point is scored)
+    hardClearDrawing: (state) => {
+      state.history.past = [];
+      state.history.future = [];
+      state.strokes = [];
+      state.currentStroke = null;
+      state.lastUpdate = Date.now();
     },
     
     // Undo last stroke
@@ -162,6 +174,7 @@ export const {
   cancelStroke,
   addRemoteStroke,
   clearDrawing,
+  hardClearDrawing,
   undo,
   redo,
   loadDrawing,

@@ -79,40 +79,53 @@ const Prediction: React.FC<PredictionProps> = ({
       timeoutRef.current = window.setTimeout(predictDrawing, 500);
     }
     return () => { if (timeoutRef.current) clearTimeout(timeoutRef.current); };
-  }, [strokes, target]); // target in deps so it re-evaluates on next round
+  }, [strokes, target]); 
 
-  if (!prediction && !isPredicting) return null;
+  React.useEffect(() => {
+    // Reset prediction display when target changes
+    setPrediction(null);
+  }, [target]);
+
+  if (!target) return null;
 
 return (
-  <div className="fixed top-4 right-4 bg-card border border-border p-4 rounded-xl shadow-lg min-w-48">
+  <div className="fixed top-4 right-4 bg-card border border-border p-5 rounded-2xl shadow-xl min-w-56 z-40">
+    <div className="flex flex-col items-center mb-4">
+      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">
+        Draw This
+      </p>
+      <h2 className="text-2xl font-black text-primary capitalize text-center">
+        {target}
+      </h2>
+    </div>
+
+    <div className="h-px bg-border my-4" />
+
     <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">
-      I think it's...
+      AI Prediction
     </p>
-    {isPredicting ? (
-      <p className="text-muted-foreground text-sm animate-pulse">Analyzing...</p>
-    ) : prediction && (
-      <>
-        <div className="flex flex-col gap-2">
-          {prediction.topGuesses.map((guess, i) => (
-            <div key={guess.class_name} className="flex items-center justify-between gap-4">
-              <span className={`capitalize text-sm ${
-                guess.class_name === target
-                  ? 'text-primary font-bold'
-                  : 'text-foreground'
-              }`}>
-                {i + 1}. {guess.class_name}
-              </span>
-              <span className="text-xs text-muted-foreground tabular-nums">
-                {(guess.confidence * 100).toFixed(1)}%
-              </span>
-            </div>
-          ))}
-        </div>
-        <div className="h-px bg-border my-3" />
-        <p className="text-xs text-muted-foreground">
-          Target: <span className="text-primary font-bold capitalize">{target}</span>
-        </p>
-      </>
+    
+    {isPredicting && !prediction ? (
+      <p className="text-muted-foreground text-sm animate-pulse text-center py-2">Analyzing...</p>
+    ) : !prediction ? (
+      <p className="text-muted-foreground text-sm italic text-center py-2">Start drawing...</p>
+    ) : (
+      <div className="flex flex-col gap-2">
+        {prediction.topGuesses.map((guess, i) => (
+          <div key={guess.class_name} className="flex items-center justify-between gap-4">
+            <span className={`capitalize text-sm ${
+              guess.class_name === target
+                ? 'text-primary font-bold'
+                : 'text-foreground'
+            }`}>
+              {i + 1}. {guess.class_name}
+            </span>
+            <span className="text-xs text-muted-foreground tabular-nums">
+              {(guess.confidence * 100).toFixed(1)}%
+            </span>
+          </div>
+        ))}
+      </div>
     )}
   </div>
 );
