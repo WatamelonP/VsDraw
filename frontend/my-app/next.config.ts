@@ -2,9 +2,10 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactStrictMode: false,
-  experimental: {
-    allowedDevOrigins: ['192.168.1.6:3000', '192.168.1.6', 'localhost:3000'],
-  },
+  allowedDevOrigins: [
+    'localhost:3000', 
+    ...(process.env.LOCAL_DEV_IP ? [`${process.env.LOCAL_DEV_IP}:3000`, process.env.LOCAL_DEV_IP] : [])
+  ],
 };
 
 export default nextConfig;

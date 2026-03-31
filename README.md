@@ -119,15 +119,32 @@ npm install
 npm run dev
 ```
 
-Make sure your `.env.local` is set up in `frontend/my-app`:
+### Environment Variables
+Create a `.env.local` file inside `frontend/my-app/`:
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8000
 ```
-NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+Create a `.env` file inside `backend/` (if needed for Redis or other secrets):
+```env
+REDIS_HOST=localhost
+REDIS_PORT=6379
 ```
 
 ---
 
-> ⚠️ This project is a work in progress. Expect breaking changes.
+## 🐳 Deployment (Docker / Railway)
 
-> My Mistakes:
-- Installing dependencies on different directories
-- Integrating Redis too early without even finishing my earlier tasks
+The backend is fully containerized and configured for CPU-only inference to minimize image size and deployment costs.
+
+To build and run the backend via Docker locally:
+```bash
+cd backend
+docker build -t vsdraw-backend .
+docker run -p 8000:8000 vsdraw-backend
+```
+
+*Note: The `requirements.txt` specifically uses the `torch` CPU-only wheel to ensure the Docker image stays well under 2GB, making it perfect for platforms like Railway or Render.*
+
+---
+
+> ⚠️ This project is a work in progress. Expect breaking changes.
