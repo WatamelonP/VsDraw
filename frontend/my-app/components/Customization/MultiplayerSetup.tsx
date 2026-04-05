@@ -5,8 +5,8 @@ import { AnimatePresence } from "motion/react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAppDispatch } from "@/store/hooks";
-import { setCurrentRoom } from "@/store/slices/roomSlice";
-import { X, Play, Users, Hash } from "lucide-react";
+import { setCurrentRoom, setPlayerName } from "@/store/slices/roomSlice";
+import { X, Play, Users, Hash, UserRound } from "lucide-react";
 
 interface MultiplayerSetupModalProps {
   isOpen: boolean;
@@ -19,6 +19,7 @@ export default function MultiplayerSetupModal({ isOpen, onClose }: MultiplayerSe
 
   const [roomId, setRoomId] = useState("");
   const [roomName, setRoomName] = useState("");
+  const [nickname, setNickname] = useState("");
   const [mode, setMode] = useState<"create" | "join">("create");
   const [isLoading, setIsLoading] = useState(false);
   const [joinError, setJoinError] = useState("");
@@ -26,6 +27,7 @@ export default function MultiplayerSetupModal({ isOpen, onClose }: MultiplayerSe
   const handleStart = async () => {
     if (mode === "create" && !roomName) return;
     if (mode === "join" && !roomId) return;
+    if (!nickname.trim()) return;
 
     setIsLoading(true);
     setJoinError("");
@@ -47,6 +49,7 @@ export default function MultiplayerSetupModal({ isOpen, onClose }: MultiplayerSe
       const finalRoomName = mode === "create" ? roomName : "Joined Room";
 
       dispatch(setCurrentRoom({ id: finalRoomId, name: finalRoomName }));
+      dispatch(setPlayerName(nickname.trim()));
       onClose();
       router.push(`/multiplayer?roomId=${finalRoomId}`);
     } catch (err) {
@@ -56,6 +59,8 @@ export default function MultiplayerSetupModal({ isOpen, onClose }: MultiplayerSe
       setIsLoading(false);
     }
   };
+
+  const canSubmit = nickname.trim().length > 0 && (mode === "create" ? roomName.length > 0 : roomId.length > 0);
 
   return (
     <AnimatePresence>
@@ -127,6 +132,22 @@ export default function MultiplayerSetupModal({ isOpen, onClose }: MultiplayerSe
                   </button>
                 </div>
 
+                {/* Player Name */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
+                    <UserRound size={12} />
+                    Your Name
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. AceDrawer"
+                    value={nickname}
+                    onChange={(e) => setNickname(e.target.value)}
+                    maxLength={20}
+                    className="w-full rounded-xl bg-muted border border-border px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                  />
+                </div>
+
                 {mode === "create" ? (
                   <div className="space-y-2">
                     <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
@@ -171,7 +192,7 @@ export default function MultiplayerSetupModal({ isOpen, onClose }: MultiplayerSe
                   onClick={handleStart}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  disabled={isLoading || (mode === "create" ? !roomName : !roomId)}
+                  disabled={isLoading || !canSubmit}
                   className="w-full flex items-center justify-center gap-2 rounded-xl bg-primary text-primary-foreground font-black uppercase tracking-wider py-4 text-sm disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
                 >
                   {isLoading ? (

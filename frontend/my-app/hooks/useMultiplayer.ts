@@ -2,11 +2,12 @@ import { useEffect, useRef, useCallback } from 'react';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { addRemoteStroke, syncDrawing, clearDrawing } from '../store/slices/drawingSlice';
 import { setClasses, setGameStatus, setTimer, updateScores, nextTarget } from '../store/slices/gameSlice';
-import { updateUser, removeUserFromRoom, setRoomUsers } from '../store/slices/roomSlice';
+import { updateUser, removeUserFromRoom, setRoomUsers, setGameSettings } from '../store/slices/roomSlice';
 
 export const useMultiplayer = (roomId: string | null, userId: string | null) => {
   const dispatch = useAppDispatch();
   const socketRef = useRef<WebSocket | null>(null);
+  const playerName = useAppSelector((state) => state.room.playerName);
 
   const sendMessage = useCallback((type: string, data: any) => {
     if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
@@ -29,7 +30,8 @@ export const useMultiplayer = (roomId: string | null, userId: string | null) => 
       console.warn('Could not parse API URL', e);
     }
 
-    const socket = new WebSocket(`${protocol}//${apiHost}/api/v1/multiplayer/ws/${roomId}/${userId}`);
+    const nameParam = playerName ? `?name=${encodeURIComponent(playerName)}` : '';
+    const socket = new WebSocket(`${protocol}//${apiHost}/api/v1/multiplayer/ws/${roomId}/${userId}${nameParam}`);
 
     socket.onopen = () => {
       console.log('Connected to multiplayer');
@@ -41,7 +43,6 @@ export const useMultiplayer = (roomId: string | null, userId: string | null) => 
 
       switch (type) {
         case 'ROOM_SYNC':
-          // We no longer sync strokes from the server in isolated canvases
           dispatch(setRoomUsers(data.players));
           dispatch(updateScores(data.scores));
           
@@ -50,14 +51,15 @@ export const useMultiplayer = (roomId: string | null, userId: string | null) => 
           }
           if (data.gameState.classes) {
             dispatch(setClasses(data.gameState.classes));
-            // Advance index to match the server state
             for (let i = 0; i < (data.gameState.currentIndex || 0); i++) {
               dispatch(nextTarget());
             }
           }
+          if (data.gameSettings) {
+            dispatch(setGameSettings(data.gameSettings));
+          }
           break;
         case 'STROKE_ADDED':
-          // Action disabled for isolated canvases
           break;
         case 'DRAWING_SYNC':
           dispatch(syncDrawing(data));
@@ -83,6 +85,14 @@ export const useMultiplayer = (roomId: string | null, userId: string | null) => 
         case 'USER_JOINED':
           dispatch(updateUser(data));
           break;
+        case 'PLAYER_READY':
+          dispatch(updateUser({ id: data.user_id, isReady: data.isReady }));
+          break;
+        case 'GAME_SETTINGS_UPDATE':
+          if (data.settings) {
+            dispatch(setGameSettings(data.settings));
+          }
+          break;
         case 'USER_LEFT':
           dispatch(removeUserFromRoom(data.user_id));
           break;
@@ -100,7 +110,7 @@ export const useMultiplayer = (roomId: string | null, userId: string | null) => 
     return () => {
       socket.close();
     };
-  }, [roomId, userId, dispatch]);
+  }, [roomId, userId, playerName, dispatch]);
 
   return { sendMessage };
 };

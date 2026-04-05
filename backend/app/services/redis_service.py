@@ -88,7 +88,22 @@ class RedisService:
         if not self.client:
             raise Exception("Redis not connected")
         key = f"room:{room_id}:players"
+        # Set default ready state
+        if "isReady" not in player_data:
+            player_data["isReady"] = False
         await self.client.hset(key, player_id, json.dumps(player_data))  # type: ignore
+
+    async def update_player_ready(self, room_id: str, player_id: str, is_ready: bool) -> None:
+        """Update a player's ready state"""
+        if not self.client:
+            raise Exception("Redis not connected")
+        key = f"room:{room_id}:players"
+        player_json = await self.client.hget(key, player_id)  # type: ignore
+        if player_json:
+            player_data = json.loads(player_json)
+            player_data["isReady"] = is_ready
+            await self.client.hset(key, player_id, json.dumps(player_data))  # type: ignore
+
     
     async def remove_player(self, room_id: str, player_id: str) -> None:
         """Remove a player from a room"""
@@ -139,6 +154,25 @@ class RedisService:
             raise Exception("Redis not connected")
         key = f"room:{room_id}:strokes"
         await self.client.delete(key)  # type: ignore
+
+    # Game settings management
+    async def set_game_settings(self, room_id: str, settings: dict) -> None:
+        """Store game settings for a room"""
+        if not self.client:
+            raise Exception("Redis not connected")
+        key = f"room:{room_id}:settings"
+        await self.client.set(key, json.dumps(settings))  # type: ignore
+        await self.client.expire(key, 3600)  # type: ignore
+
+    async def get_game_settings(self, room_id: str) -> dict:
+        """Get game settings for a room"""
+        if not self.client:
+            raise Exception("Redis not connected")
+        key = f"room:{room_id}:settings"
+        data = await self.client.get(key)  # type: ignore
+        if data:
+            return json.loads(data)
+        return {"count": 10, "repetitions": False, "excludeClasses": []}
 
     # Pub/Sub for real-time communication
     async def publish_event(self, room_id: str, event_type: str, data: dict) -> None:

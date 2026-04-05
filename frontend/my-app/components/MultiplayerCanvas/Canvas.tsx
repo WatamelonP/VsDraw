@@ -85,7 +85,6 @@ const MultiplayerCanvas: React.FC = () => {
 
   const handleMouseUp = () => {
     if (currentStroke) {
-      // Strokes are entirely local now, no need to broadcast
       dispatch(endStroke());
     }
   };
@@ -97,19 +96,22 @@ const MultiplayerCanvas: React.FC = () => {
       sendMessage('NEXT_TARGET', {});
       dispatch(hardClearDrawing());
       
-      // Unlock after a 2-second delay to allow target state to propagate and prevent duplicate scoring
       setTimeout(() => {
         isScoringRef.current = false;
       }, 2000);
     }
   }, [currentTarget, userId, sendMessage, dispatch]);
 
-  const handleStartGame = async () => {
+  const handleStartGame = async (settings: { count: number; repetitions: boolean; excludeClasses: string[] }) => {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/drawing/target`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ count: 10, repetitions: false, exclude_classes: [] }),
+        body: JSON.stringify({
+          count: settings.count,
+          repetitions: settings.repetitions,
+          exclude_classes: settings.excludeClasses,
+        }),
       });
       const data = await response.json();
       
@@ -204,7 +206,11 @@ const MultiplayerCanvas: React.FC = () => {
           </Stage>
         </>
       ) : (
-        <Lobby onStartGame={handleStartGame} />
+        <Lobby
+          onStartGame={handleStartGame}
+          sendMessage={sendMessage}
+          userId={userId}
+        />
       )}
     </div>
   );

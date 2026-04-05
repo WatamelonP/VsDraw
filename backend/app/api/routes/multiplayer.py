@@ -1,4 +1,4 @@
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException, Body
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException, Body, Query
 from typing import List, Dict, Any
 import json
 import asyncio
@@ -36,7 +36,7 @@ async def check_room_exists(room_id: str):
     return {"exists": exists}
 
 @router.websocket("/ws/{room_id}/{user_id}")
-async def websocket_endpoint(websocket: WebSocket, room_id: str, user_id: str):
+async def websocket_endpoint(websocket: WebSocket, room_id: str, user_id: str, name: str = Query(default=None)):
     await manager.connect(room_id, websocket)
     
     # Subscribe to Redis channel for this room in a separate task
@@ -54,7 +54,8 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, user_id: str):
 
     redis_task = asyncio.create_task(listen_to_redis())
 
-    player_data = {"id": user_id, "name": f"Player {user_id[-4:]}"}
+    player_name = name if name else f"Player {user_id[-4:]}"
+    player_data = {"id": user_id, "name": player_name}
     try:
         await redis_service.add_player(room_id, user_id, player_data)
         strokes = await redis_service.get_strokes(room_id)
@@ -66,6 +67,8 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, user_id: str):
             game_state["classes"] = json.loads(game_state["classes"])
         if "currentIndex" in game_state:
             game_state["currentIndex"] = int(game_state["currentIndex"])
+
+        game_settings = await redis_service.get_game_settings(room_id)
             
         await websocket.send_text(json.dumps({
             "type": "ROOM_SYNC",
@@ -73,7 +76,8 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, user_id: str):
                 "strokes": strokes,
                 "players": list(players.values()),
                 "scores": scores,
-                "gameState": game_state
+                "gameState": game_state,
+                "gameSettings": game_settings
             }
         }))
         
@@ -109,6 +113,11 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, user_id: str):
                 await redis_service.client.hset(f"room:{room_id}:state", "classes", json.dumps(event_data.get("classes")))  # type: ignore
             elif event_type == "NEXT_TARGET":
                 await redis_service.client.hincrby(f"room:{room_id}:state", "currentIndex", 1)  # type: ignore
+            elif event_type == "PLAYER_READY":
+                await redis_service.update_player_ready(room_id, event_data.get("user_id"), event_data.get("isReady", False))
+            elif event_type == "GAME_SETTINGS_UPDATE":
+                settings = event_data.get("settings", {})
+                await redis_service.set_game_settings(room_id, settings)
 
             await redis_service.publish_event(room_id, event_type, event_data)
             
