@@ -11,7 +11,7 @@ COPY requirements.txt .
 # Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Then copy the rest of the app
+
 COPY ./app /code/app  
 
 # Debug: List installed packages (optional)
