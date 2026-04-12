@@ -12,7 +12,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Then copy the rest of the app
-COPY ./app /code  
+COPY ./app /code/app  
 
 # Debug: List installed packages (optional)
 RUN pip list
