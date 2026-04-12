@@ -20,4 +20,4 @@ RUN pip list
 # Debug: Check if uvicorn is installed
 RUN which uvicorn || echo "uvicorn not found"
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
