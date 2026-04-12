@@ -1,6 +1,6 @@
 FROM python:3.11-slim
 
-WORKDIR /code  # Change this to /code to match the mount
+WORKDIR /code
 
 # First, make sure we have the latest pip
 RUN pip install --no-cache-dir --upgrade pip
@@ -20,4 +20,4 @@ RUN pip list
 # Debug: Check if uvicorn is installed
 RUN which uvicorn || echo "uvicorn not found"
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
