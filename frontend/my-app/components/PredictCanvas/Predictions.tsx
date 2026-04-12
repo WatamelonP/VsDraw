@@ -43,7 +43,7 @@ const Prediction: React.FC<PredictionProps> = ({
 
     setIsPredicting(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/drawing/predict`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/drawing/predict`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -55,14 +55,19 @@ const Prediction: React.FC<PredictionProps> = ({
           classes
         })
       });
-      
+
+      if (!response.ok) {
+        console.error('Prediction request failed:', response.status, response.statusText);
+        return;
+      }
+
       const result = await response.json();
-     setPrediction({
-  className: result.class_name,
-  confidence: result.confidence,
-  topGuesses: result.top_guesses,
-});
-      
+      setPrediction({
+        className: result.class_name,
+        confidence: result.confidence,
+        topGuesses: result.top_guesses ?? [],
+      });
+
       if (onPredictionComplete) {
         onPredictionComplete({ className: result.class_name, confidence: result.confidence });
       }
