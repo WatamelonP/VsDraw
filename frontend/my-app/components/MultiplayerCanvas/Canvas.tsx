@@ -104,7 +104,7 @@ const MultiplayerCanvas: React.FC = () => {
 
   const handleStartGame = async (settings: { count: number; repetitions: boolean; excludeClasses: string[] }) => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/drawing/target`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/drawing/target`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

@@ -37,7 +37,7 @@ export default function MultiplayerSetupModal({ isOpen, onClose }: MultiplayerSe
         : roomId.toUpperCase();
 
       if (mode === "join") {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/multiplayer/room/${finalRoomId}/exists`);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/multiplayer/room/${finalRoomId}/exists`);
         const data = await res.json();
         if (!data.exists) {
           setJoinError("Room not found. Please check the code.");

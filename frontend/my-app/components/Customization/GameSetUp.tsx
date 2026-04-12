@@ -51,7 +51,7 @@ export default function GameSetupModal({ isOpen, onClose }: GameSetupModalProps)
     setIsLoading(true);
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/drawing/target`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/drawing/target`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
